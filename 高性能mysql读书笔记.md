@@ -133,3 +133,30 @@ timestamp只占用datetime一半的存储空间
   > + 存储ip地址，可以使用无符号整数来存储，inet_aton()和inet_ntoa()分辨用来做加密和解密的操作
   > + 不建议的做法  1. 太多的列 2.太多的关联，建议极限为12个  3.全能的枚举  4. Null
   > 范式化优点： 1.更新操作更快 2.数据量一般都会少 3.更少的使用group by或者distinct  缺点： 1.关联查询效率会很低
+
+  >汇总表和缓存表
+   + 缓存表 每次读取比较慢的
+   + 汇总表 需要聚合函数进行统计的表
+
+> 物化视图
+
+> 计数器表
+
+> alter table 加速操作
+
+   + 方法一 ： 现在一台不提供服务的机器上执行alter table，然后和提供服务的主库进行交换
+   + 方法二 ： 影子拷贝，原理是先创建一张新表，然后然后通过重命名和删除表来完成，工具选择：online schema change（facebook） openark toolkit(noach)
+
+  +  修改默认值方法
+		++ alter table tableName.film modify column columnName tinyint(3) not null default 5 (慢)
+		++ alter table tableName.film alter column columnName set default 5 (快) 
+	 + <b>只要牵扯到modify column的操作都会导致表重建</b>
+	+ 下面技术是不需要重建表(建议备份数据)
+	  + 移除一个列的auto_increment属性
+	  + 增加 移除 修改 enum或set常量
+	+ 基本技术是创建一个新的frm文件，替换掉以前的那张表的frm
+	+ 具体操作
+	  + 创建一张相同的空表，进行修改
+	  + 执行语句 flush tables with read lock ，关闭正在使用的表，并禁止被打开
+	  + 交换frm文件
+	  + 执行unlock tables释放前面的锁   
